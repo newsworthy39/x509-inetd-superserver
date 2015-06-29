@@ -441,10 +441,10 @@ int main(int argc, char *argv[]) {
                     printf("Client msg:\n%s", buffer_ind);
 #endif
                     ExecuteDirectory(directory, buffer_ind, buffer_out, 0);
-                    sprintf(buffer_out, "%s1", buffer_out);
 #ifdef __DEBUG__
                     printf("Reply msg:\n%s", buffer_out);
 #endif
+		    buffer_out[strlen(buffer_out) - 1]=1;
                     SSL_write(ssl, buffer_out, strlen(buffer_out)); /* send reply */
                 } else
                     ERR_print_errors_fp(stderr);
