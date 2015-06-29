@@ -343,7 +343,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef __DEBUG__
     printf(
-            "-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, skipvalidate = %d\n",
+            "-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, -n(o CA validation) = %d\n",
             hostname, portnum, directory, crt, skipvalidate);
 #endif
 

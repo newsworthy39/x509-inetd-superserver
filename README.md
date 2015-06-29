@@ -16,11 +16,11 @@ SHA1-fingerprint: <a long hex-fingerprint>
 You may alter, the callback, to revert to default functionality, to traverse the SSL-CA-chain, by using the default-behavior and requiring a common CA-authority.
 
 # Arguments:
- -b(ind to interface, default= "0.0.0.0"),
- -l(isten to port, default="5001"),
- -c(ertificate X509 pki-bundle, default="mycrt.pem")
+ -h(ost, default= "0.0.0.0"),
+ -p(ort, default="5001"),
  -d(irectory to look for scripts, to execute when called, default="/etc/ether.d")
+ -c(ertificate X509 pki-bundle, default="mycrt.pem")  
+ -n(o CA validation, default off)
  
- This software, comes with a client-side X509-implementation, using the above arguments, with a hostname.
- 
- 
+   
+ This software, comes with a client-side X509-implementation, using the above arguments, with a hostname. 
