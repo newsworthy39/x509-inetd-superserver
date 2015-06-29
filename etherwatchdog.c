@@ -99,9 +99,10 @@ static void ExecuteDirectory(const char * dir_name, const char * buffer_in,
         /* Print the name of the file and directory. */
 //#if 0
         /* If you don't want to print the directories, use the
-         following line: */
+         following line:, and also - skip the files with a . */
 
         if (!(entry->d_type & DT_DIR)) {
+            if(strncmp(d_name, ".", 1) != 0) {
 
             char szbuf[512];
             bzero(szbuf, sizeof(szbuf));
@@ -126,6 +127,7 @@ static void ExecuteDirectory(const char * dir_name, const char * buffer_in,
                 strncpy(c, outputbuffer, strlen(outputbuffer));
                 offset += strlen(outputbuffer);
             }
+	    } // end if not beginning with a .
         }
 
 //#endif /* 0 */
