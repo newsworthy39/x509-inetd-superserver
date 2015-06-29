@@ -25,3 +25,10 @@ You may alter, the callback, to revert to default functionality, to traverse the
    
  This software, comes with a client-side X509-implementation, using the above arguments, with a hostname. 
  https://github.com/newsworthy39/X509-inetd-client
+
+# compile:
+# compile
+ git clone https://github.com/newsworthy39/x509-inetd-superserver
+ cd X509-inetd-client
+ RELEASE="Release"
+ cd $RELEASE && make
