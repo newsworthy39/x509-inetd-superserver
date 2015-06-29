@@ -17,10 +17,25 @@ You may alter, the callback, to revert to default functionality, to traverse the
 
 # Arguments:
  -h(ost, default= "0.0.0.0"),
+ 
  -p(ort, default="5001"),
+ 
  -d(irectory to look for scripts, to execute when called, default="/etc/ether.d")
+ 
  -c(ertificate X509 pki-bundle, default="mycrt.pem")  
+ 
  -n(o CA validation, default off)
  
    
  This software, comes with a client-side X509-implementation, using the above arguments, with a hostname. 
+ https://github.com/newsworthy39/X509-inetd-client
+
+# Compile:
+ git clone https://github.com/newsworthy39/x509-inetd-superserver
+ 
+ cd X509-inetd-client
+ 
+ RELEASE="Release"
+ 
+ cd $RELEASE && make
+ 
