@@ -1,0 +1,1 @@
+etherwatchdog.d: ../etherwatchdog.c
