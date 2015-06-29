@@ -102,32 +102,32 @@ static void ExecuteDirectory(const char * dir_name, const char * buffer_in,
          following line:, and also - skip the files with a . */
 
         if (!(entry->d_type & DT_DIR)) {
-            if(strncmp(d_name, ".", 1) != 0) {
+            if (strncmp(d_name, ".", 1) != 0) {
 
-            char szbuf[512];
-            bzero(szbuf, sizeof(szbuf));
+                char szbuf[512];
+                bzero(szbuf, sizeof(szbuf));
 
-            char filename[255];
-            bzero(filename, sizeof(filename));
-            sprintf(filename, "%s/%s", dir_name, d_name);
+                char filename[255];
+                bzero(filename, sizeof(filename));
+                sprintf(filename, "%s/%s", dir_name, d_name);
 
 #ifdef __DEBUG__
-            printf("SERVER EXECUTING FILE: %s/%s\n", dir_name, d_name);
+                printf("SERVER EXECUTING FILE: %s/%s\n", dir_name, d_name);
 #endif
-            char *name[] = { filename, buffer_in, szbuf, NULL };
+                char *name[] = { filename, buffer_in, szbuf, NULL };
 
-            Execute(name);
+                Execute(name);
 
-            if (strlen(szbuf) > 0) {
-                char outputbuffer[strlen(szbuf) + strlen(d_name) + 1];
-                bzero(outputbuffer, sizeof(outputbuffer));
-                sprintf(outputbuffer, "%s: %s", d_name, szbuf);
+                if (strlen(szbuf) > 0) {
+                    char outputbuffer[strlen(szbuf) + strlen(d_name) + 1];
+                    bzero(outputbuffer, sizeof(outputbuffer));
+                    sprintf(outputbuffer, "%s: %s,", d_name, szbuf);
 
-                char *c = &buffer_out[offset];
-                strncpy(c, outputbuffer, strlen(outputbuffer));
-                offset += strlen(outputbuffer);
-            }
-	    } // end if not beginning with a .
+                    char *c = &buffer_out[offset];
+                    strncpy(c, outputbuffer, strlen(outputbuffer));
+                    offset += strlen(outputbuffer);
+                }
+            } // end if not beginning with a .
         }
 
 //#endif /* 0 */
@@ -259,14 +259,14 @@ void ShowCerts(SSL* ssl, char * copyoutbuffer) {
         printf("Peer certificates:\n");
 #endif
         line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-        int r = sprintf(copyoutbuffer, "Subject: %s, ", line);
+        int r = sprintf(copyoutbuffer, "Subject: %s,", line);
 
 #ifdef __DEBUG__
         printf("Subject: %s\n", line);
 #endif
         free(line);
         line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-        r += sprintf(copyoutbuffer + r, "Issuer: %s, ", line);
+        r += sprintf(copyoutbuffer + r, "Issuer: %s,", line);
 
 #ifdef __DEBUG__
         printf("Issuer: %s\n", line);
@@ -286,7 +286,7 @@ void ShowCerts(SSL* ssl, char * copyoutbuffer) {
         for (pos = 0; pos < 19; pos++)
             r += sprintf(copyoutbuffer + r, "%02x:", md[pos]);
 
-        sprintf(copyoutbuffer + r, "%02x, ", md[19]);
+        sprintf(copyoutbuffer + r, "%02x,", md[19]);
 
         X509_free(cert);
     } else
@@ -311,8 +311,9 @@ int main(int argc, char *argv[]) {
 //    }
 
     int server, c, index, skipvalidate = 0;
-    char *hostname = "localhost", *portnum = "5001", *directory =
-            "/etc/ether.d", *crt = "mycrt.pem", *authority = "myca.pem";
+    char *hostname = "localhost", *portnum = "5001",
+            *directory = "/etc/ether.d", *crt = "mycrt.pem", *authority =
+                    "myca.pem";
 
     while ((c = getopt(argc, argv, "h:p:d:c:a:n")) != -1)
         switch (c) {
@@ -379,7 +380,7 @@ int main(int argc, char *argv[]) {
         SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
 
     ; /* create server socket */
-    if (-1 == ( server = OpenListener(atoi(portnum)))) {
+    if (-1 == (server = OpenListener(atoi(portnum)))) {
         printf("error: Could not connect, to %s:%d\n", hostname, atoi(portnum));
         exit(EXIT_FAILURE);
     }
@@ -433,7 +434,8 @@ int main(int argc, char *argv[]) {
                     char buffer_ind[4096];
                     bzero(buffer_ind, sizeof(buffer_ind));
 
-                    sprintf(buffer_ind, "%s%s", buffer_cert_information, buffer_in);
+                    sprintf(buffer_ind, "%s%s", buffer_cert_information,
+                            buffer_in);
 
 #ifdef __DEBUG__
                     printf("Client msg:\n%s", buffer_ind);
@@ -443,7 +445,7 @@ int main(int argc, char *argv[]) {
 #ifdef __DEBUG__
                     printf("Reply msg:\n%s", buffer_out);
 #endif
-                    SSL_write(ssl, buffer_out, strlen(buffer_out) ); /* send reply */
+                    SSL_write(ssl, buffer_out, strlen(buffer_out)); /* send reply */
                 } else
                     ERR_print_errors_fp(stderr);
             }
