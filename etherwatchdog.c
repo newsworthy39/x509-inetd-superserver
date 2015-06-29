@@ -303,10 +303,10 @@ static int always_true_callback(X509_STORE_CTX *ctx, void *arg) {
 int main(int argc, char *argv[]) {
 
     // Make sure we're root.
-    if (!isRoot()) {
-        printf("This program must be run as root/sudo user\n");
-        exit(0);
-    }
+//    if (!isRoot()) {
+//        printf("This program must be run as root/sudo user\n");
+//        exit(0);
+//    }
 
     int server, c, index, skipvalidate = 0;
     char *hostname = "localhost", *portnum = "5001", *directory =
