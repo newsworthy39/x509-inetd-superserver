@@ -310,9 +310,9 @@ int main(int argc, char *argv[]) {
 
     int server, c, index, skipvalidate = 0;
     char *hostname = "localhost", *portnum = "5001", *directory =
-            "/etc/ether.d", *crt = "mycrt.pem";
+            "/etc/ether.d", *crt = "mycrt.pem", *authority = "myca.pem";
 
-    while ((c = getopt(argc, argv, "h:p:d:c:n")) != -1)
+    while ((c = getopt(argc, argv, "h:p:d:c:a:n")) != -1)
         switch (c) {
         case 'h':
             hostname = optarg;
@@ -325,6 +325,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'c':
             crt = optarg;
+            break;
+        case 'a':
+            authority = optarg;
             break;
         case 'n':
             skipvalidate = 1;
@@ -343,8 +346,8 @@ int main(int argc, char *argv[]) {
 
 #ifdef __DEBUG__
     printf(
-            "-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, -n(o CA validation) = %d\n",
-            hostname, portnum, directory, crt, skipvalidate);
+            "-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, -a(uthority) = %s, -n(o CA validation) = %d\n",
+            hostname, portnum, directory, crt, authority, skipvalidate);
 #endif
 
     for (index = optind; index < argc; index++) {
@@ -365,6 +368,9 @@ int main(int argc, char *argv[]) {
 
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, NULL);
     SSL_CTX_set_options(ctx, SSL_OP_NO_TLSv1|SSL_OP_NO_SSLv3|SSL_OP_NO_SSLv2);
+    if (1 != SSL_CTX_load_verify_locations(ctx, authority, NULL)) {
+        printf("error: Could not load authority from file %s\n", authority);
+    }
 
     // Should we skip CA-validation?
     if (skipvalidate == 1)
