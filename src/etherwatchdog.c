@@ -38,7 +38,8 @@ void Execute(char **argv) {
 		close(pipefd[1]);    // this descriptor is no longer needed
 
 		if (execvp(*argv, argv) < 0) { /* execute the command  */
-			printf("*** ERROR: exec failed\n");
+			fprintf(stderr, "Executing process %s failed\n", argv[0]);
+			exit(-1);
 		}
 
 		// allways send a empty byte, at the end.
