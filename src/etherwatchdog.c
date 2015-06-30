@@ -292,7 +292,7 @@ void ShowCerts(SSL* ssl, char * copyoutbuffer) {
 		for (pos = 0; pos < 19; pos++)
 			r += sprintf(copyoutbuffer + r, "%02x:", md[pos]);
 
-		sprintf(copyoutbuffer + r, "%02x,", md[19]);
+		sprintf(copyoutbuffer + r, "%02x", md[19]);
 
 		X509_free(cert);
 	} else
