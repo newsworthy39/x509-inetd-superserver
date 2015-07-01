@@ -359,6 +359,29 @@ static int always_true_callback(X509_STORE_CTX *ctx, void *arg) {
 	return 1;
 }
 
+/**************  Handle timeout/disappearance of client  **************/
+void set_up_signals(void)
+{
+     struct sigaction sa;
+     void alarm_handler(int signum), no_client(int signum),
+          sigchld_handler(int signum);
+
+     sigfillset(&sa.sa_mask);    /****  Take care of signals.  ****/
+     sa.sa_flags   = 0;
+
+     sa.sa_handler = sigchld_handler;
+     sigaction(SIGCHLD, &sa, NULL);
+}
+
+/*******************  Clear zombie when child finishes.  *********************/
+void sigchld_handler(int signum)
+{
+     int status;
+
+     while (waitpid(-1, &status, WNOHANG) > 0);
+}
+
+
 int main(int argc, char *argv[]) {
 
 // Make sure we're root.
@@ -366,6 +389,7 @@ int main(int argc, char *argv[]) {
 //        printf("This program must be run as root/sudo user\n");
 //        exit(0);
 //    }
+	set_up_signals();
 
 	int server, c, index, skipvalidate = 0;
 	char *hostname = "localhost", *portnum = "5001",
@@ -539,8 +563,7 @@ int main(int argc, char *argv[]) {
 		} else if (pid > 0) {
 			// This blocks, execution.
 			close(client);
-			while (wait(&status) != pid)
-			;
+			continue;
 		}
 
 		/*
