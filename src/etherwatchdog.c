@@ -164,8 +164,8 @@ static void ExecuteDirectory(const char * dir_name,
 
 				if (strlen(szbuf) > 0) {
 					stdinout->offset_out += sprintf(
-							&stdinout->buffer_out[stdinout->offset_out],
-							"%s\r", szbuf);
+							&stdinout->buffer_out[stdinout->offset_out], "%s",
+							szbuf);
 				}
 
 				if (abort != 0) {
@@ -342,7 +342,7 @@ void ShowCerts(SSL* ssl, struct STDINSTDOUT * stdinstdout) {
 					md[pos]);
 
 		stdinstdout->offset_in += sprintf(
-				&stdinstdout->buffer_in[stdinstdout->offset_in], "%02x\r\n",
+				&stdinstdout->buffer_in[stdinstdout->offset_in], "%02x",
 				md[19]);
 
 		X509_free(cert);
@@ -436,7 +436,7 @@ int main(int argc, char *argv[]) {
 		printf("error: Could not load authority from file %s\n", authority);
 	}
 
-// Should we skip CA-validation?
+	// Should we skip CA-validation?
 	if (skipvalidate == 1)
 		SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
 
@@ -450,6 +450,8 @@ int main(int argc, char *argv[]) {
 		struct sockaddr_in addr;
 		socklen_t len = sizeof(addr);
 		SSL *ssl;
+		pid_t pid;
+		int status;
 
 		int client = accept(server, (struct sockaddr*) &addr, &len); /* accept connection as usual */
 
@@ -457,9 +459,6 @@ int main(int argc, char *argv[]) {
 		printf("Connection: %s:%d\n", inet_ntoa(addr.sin_addr),
 				ntohs(addr.sin_port));
 #endif
-
-		pid_t pid;
-		int status;
 
 		/*
 		 * Here we fork, lets party!
@@ -469,10 +468,10 @@ int main(int argc, char *argv[]) {
 			perror("Error forking");
 		} else if (pid == 0) {
 
-			// we're child
+			// we're child. We own the server.
 			close(server);
 
-			// ssl
+			// Lets geet cooking, on SSL.
 			ssl = SSL_new(ctx); /* get new SSL state with context */
 			SSL_set_fd(ssl, client); /* set connection socket to SSL state */
 
@@ -484,17 +483,29 @@ int main(int argc, char *argv[]) {
 
 			else {
 
-				ShowCerts(ssl, &tt); /* get any certificates */
-
 				tt.offset_in += SSL_read(ssl, &tt.buffer_in[tt.offset_in],
-						sizeof(tt.buffer_in) - tt.offset_in); /* get request */
+						sizeof(tt.buffer_in)); /* get request */
+
+#ifdef __DEBUG__
+				printf("Received message:\n%s, bytes: %d \n", tt.buffer_in,
+						tt.offset_in);
+#endif
+
+				/*
+				 * We have a special case, into which a nullbyte is sent.
+				 * This is received, and we treat the request anyways.
+				 * This allows me, to create a know status on the client-side,
+				 * if the ssl-ca-handshake was ssuccessful or not, easily.
+				 */
+				if (tt.offset_in == 1) {
+					tt.offset_in = 0;
+				}
+
+				ShowCerts(ssl, &tt); /* get any certificates */
 
 				if (tt.offset_in > 0) {
 
-#ifdef __DEBUG__
-					printf("Received message:\n%s\n", tt.buffer_in);
-#endif
-					// Arg, blocking!
+					// Arg, blocking! don't worry.
 					ExecuteDirectory(directory, &tt);
 
 					/** The reason, we send a single byte, if
@@ -509,7 +520,8 @@ int main(int argc, char *argv[]) {
 					}
 #ifdef __DEBUG__
 					if (tt.offset_out > 0)
-						printf("Output length: %zu, bytes sent: %d, value: %s\n",
+						printf(
+								"Output length: %zu, bytes sent: %d, value: %s\n",
 								strlen(tt.buffer_out), bytes, tt.buffer_out);
 					else
 						printf("Output length: %zu, bytes sent: %d\n",
@@ -518,18 +530,17 @@ int main(int argc, char *argv[]) {
 				} else
 					ERR_print_errors_fp(stderr);
 			}
+
 			sd = SSL_get_fd(ssl); /* get socket connection */
 			SSL_free(ssl); /* release SSL state */
 			close(sd); /* close connection */
 			exit(0);
+
 		} else if (pid > 0) {
-
+			// This blocks, execution.
 			close(client);
-
-			// We skip waiting, and let accept do the block. Fork, a SSL-server off,
-			// everytime, and/or do some process-accounting here.
-			// while (wait(&status) != pid)
-			//	;
+			while (wait(&status) != pid)
+			;
 		}
 
 		/*
