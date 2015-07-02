@@ -376,6 +376,7 @@ void set_up_signals(void) {
 }
 
 unsigned int children = 0;
+unsigned int maxchildren = 0;
 
 /*******************  Clear zombie when child finishes.  *********************/
 void sigchld_handler(int signum) {
@@ -392,7 +393,6 @@ void sigchld_handler(int signum) {
 
 void make_new_child(SSL_CTX * ctx, int server) {
 	pid_t pid;
-	int status;
 
 	/*
 	 * Here we fork, lets party!
@@ -511,7 +511,7 @@ int main(int argc, char *argv[]) {
 
 	int server, c, index, skipvalidate = 0;
 
-	while ((c = getopt(argc, argv, "h:p:d:c:a:np")) != -1)
+	while ((c = getopt(argc, argv, "h:p:d:c:a:nm:")) != -1)
 		switch (c) {
 		case 'h':
 			hostname = optarg;
@@ -531,8 +531,8 @@ int main(int argc, char *argv[]) {
 		case 'n':
 			skipvalidate = 1;
 			break;
-		case 'p':
-			children = atoi(optarg);
+		case 'm':
+		    maxchildren = atoi(optarg);
 			break;
 		case '?':
 			if (optopt == 'c')
@@ -548,8 +548,8 @@ int main(int argc, char *argv[]) {
 
 #ifdef __DEBUG__
 	printf(
-			"-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, -a(uthority) = %s, -n(o CA validation) = %d\n",
-			hostname, portnum, directory, crt, authority, skipvalidate);
+			"-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, -a(uthority) = %s, -n(o CA validation) = %d, -m(ax children) = %d\n",
+			hostname, portnum, directory, crt, authority, skipvalidate, maxchildren);
 #endif
 
 	for (index = optind; index < argc; index++) {
@@ -585,7 +585,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	unsigned int i = 0;
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i < maxchildren; i++) {
 		make_new_child(ctx, server);
 	}
 
@@ -594,7 +594,7 @@ int main(int argc, char *argv[]) {
 		sleep(1);
 		unsigned int i = 0;
 
-		for (i = children; i < 5; i++) {
+		for (i = children; i < maxchildren; i++) {
 			make_new_child(ctx, server);
 		}
 	}
