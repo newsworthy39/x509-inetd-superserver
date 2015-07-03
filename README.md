@@ -20,12 +20,15 @@ You may alter, the callback, to revert to default functionality, to traverse the
  
  -p(ort, default="5001"),
  
- -d(irectory to look for scripts, to execute when called, default="/etc/ether.d")
+ -d(irectory to look for scripts, to execute when called, multiple directories delimited by ':', optional)
+ 
+ -f(iles to execute when called, multiple files delimited by ':', optional)
  
  -c(ertificate X509 pki-bundle, default="mycrt.pem")  
  
- -n(o CA validation, default off)
+ -m(ax clients to serve at the same time, default 5)
  
+ -n(o CA validation, default off)
    
  This software, comes with a client-side X509-implementation, using the above arguments, with a hostname. 
  https://github.com/newsworthy39/X509-inetd-client
@@ -33,9 +36,11 @@ You may alter, the callback, to revert to default functionality, to traverse the
 # Compile:
  git clone https://github.com/newsworthy39/x509-inetd-superserver
  
- cd X509-inetd-client
+ cd X509-inetd-superserver
  
  RELEASE="Release"
  
  cd $RELEASE && make
  
+ # Certificate authority
+ .. 
