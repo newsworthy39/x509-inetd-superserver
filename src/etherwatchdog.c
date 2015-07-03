@@ -24,8 +24,10 @@ struct STDINSTDOUT {
 	unsigned int offset_out;
 };
 
-char *hostname = "localhost", *portnum = "5001", *directory = "/etc/ether.d",
+char *hostname = "localhost", *portnum = "5001", *directory = "", *files = "",
 		*crt = "mycrt.pem", *authority = "myca.pem";
+
+unsigned int children = 0, maxchildren = 5;
 
 /**
  * Execute a file, using fork and dup2(pipe)
@@ -104,17 +106,73 @@ int Execute(char **argv) {
 }
 
 /**
+ * Check for the existance of a file.
+ */
+int fileExists(const char *fname) {
+	FILE *file;
+	if ((file = fopen(fname, "r"))) {
+		fclose(file);
+		return 1;
+	}
+	return 0;
+}
+
+/**
+ * ExecuteDirectory.
+ * Executes the content of a directory (not-recursive). When it encountes an exec, that returns exit(1), then
+ * it halts processing, because it signals the claim of responsibility. This can be used, to implement chain-of-responsibilites.
+ * @param fqdn The file, to run ( files should be marked with +x).
+ * @param struct STDINSTDOUT * stdinout The input buffer, as received from the client.
+ * @return int if not.
+ */
+void ExecuteFile(const char * filename, struct STDINSTDOUT * stdinout) {
+
+	char * pcf = strtok(files, ":");
+
+	while (pcf != NULL) {
+
+		char szbuf[512];
+		bzero(szbuf, sizeof(szbuf));
+
+#ifdef __DEBUG__
+		printf("SERVER EXECUTING FILE: %s\n", filename);
+#endif
+
+		if (fileExists(filename)) {
+
+			char *name[] = { filename, &stdinout->buffer_in[0], szbuf,
+			NULL };
+
+			int abort = Execute(name);
+
+			if (strlen(szbuf) > 0) {
+				stdinout->offset_out += sprintf(
+						&stdinout->buffer_out[stdinout->offset_out], "%s",
+						szbuf);
+			}
+
+			if (abort != 0)
+				break;
+		} else {
+			fprintf(stderr, "Cannot open filename '%s': %s\n", filename,
+					strerror(errno));
+
+		}
+
+		pcf = strtok(NULL, ":");
+	}
+
+}
+
+/**
  * ExecuteDirectory.
  * Executes the content of a directory (not-recursive). When it encountes an exec, that returns exit(1), then
  * it halts processing, because it signals the claim of responsibility. This can be used, to implement chain-of-responsibilites.
  * @param dir_name The directory, into which, recursively to look for files, to execute (files, containing with +x).
- * @param buffer_in The input buffer, as received from the client.
- * @param buffer_out the result buffer, as the result from the exeuction directory.
- * @param offset the stream-pointer
+ * @param struct STDINSTDOUT * stdinout The input/output struct,
  * @return none.
  */
-static void ExecuteDirectory(const char * dir_name,
-		struct STDINSTDOUT * stdinout) {
+void ExecuteDirectory(const char * dir_name, struct STDINSTDOUT * stdinout) {
 
 	DIR * d;
 
@@ -126,7 +184,7 @@ static void ExecuteDirectory(const char * dir_name,
 	if (!d) {
 		fprintf(stderr, "Cannot open directory '%s': %s\n", dir_name,
 				strerror(errno));
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	while (1) {
@@ -310,8 +368,8 @@ void ShowCerts(SSL* ssl, struct STDINSTDOUT * stdinstdout) {
 #endif
 		line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
 		stdinstdout->offset_in += sprintf(
-				&stdinstdout->buffer_in[stdinstdout->offset_in],
-				"Subject:%s\r\n", line);
+				&stdinstdout->buffer_in[stdinstdout->offset_in], "Subject:%s\n",
+				line);
 
 #ifdef __DEBUG__
 		printf("Subject: %s\n", line);
@@ -319,8 +377,8 @@ void ShowCerts(SSL* ssl, struct STDINSTDOUT * stdinstdout) {
 		free(line);
 		line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
 		stdinstdout->offset_in += sprintf(
-				&stdinstdout->buffer_in[stdinstdout->offset_in],
-				"Issuer:%s\r\n", line);
+				&stdinstdout->buffer_in[stdinstdout->offset_in], "Issuer:%s\n",
+				line);
 
 #ifdef __DEBUG__
 		printf("Issuer: %s\n", line);
@@ -375,14 +433,12 @@ void set_up_signals(void) {
 	sigaction(SIGCHLD, &sa, NULL);
 }
 
-unsigned int children = 0;
-unsigned int maxchildren = 0;
-
-/*******************  Clear zombie when child finishes.  *********************/
+/**
+ * Reap children, and fill up the pool, by decrementing the children.
+ * The main while(1) .. sleep .. for, will fill up the missing.
+ */
 void sigchld_handler(int signum) {
-#ifdef __DEBUG__
-	printf("Child exited");
-#endif
+
 	int status;
 
 	while (waitpid(-1, &status, WNOHANG) > 0)
@@ -391,6 +447,10 @@ void sigchld_handler(int signum) {
 	children--;
 }
 
+/**
+ * make_new_child.
+ * Creates a new child, with a copy of the SSL-context.
+ */
 void make_new_child(SSL_CTX * ctx, int server) {
 	pid_t pid;
 
@@ -457,8 +517,32 @@ void make_new_child(SSL_CTX * ctx, int server) {
 
 				if (tt.offset_in > 0) {
 
-					// Arg, blocking! don't worry.
-					ExecuteDirectory(directory, &tt);
+					/**
+					 * A) Run through directories.
+					 * B) Blocking, thus we use prefork.
+					 * C) Multiple-directories.
+					 * D) The flag can be omitted, then we skip it entirely.
+					 */
+#ifdef __DEBUG__
+					printf("Splitting string \"%s\" into tokens:\n", directory);
+#endif
+					if (strlen(directory) > 0) {
+						char * pch = strtok(directory, ":");
+						while (pch != NULL) {
+							ExecuteDirectory(pch, &tt);
+							pch = strtok(NULL, ":");
+						}
+					}
+
+					/**
+					 * A) Run file. The same principles apply, abort if child exits(>0)
+					 * B) Blocking, thus we use prefork.
+					 * C) Multiple-files
+					 * D) The flag can be omitted, then we skip them entirely.
+					 */
+					if (strlen(files) > 0) {
+						ExecuteFile(files, &tt);
+					}
 
 					/** The reason, we send a single byte, if
 					 * no scripts executed, is to signal an healthy SSL-connection
@@ -511,7 +595,7 @@ int main(int argc, char *argv[]) {
 
 	int server, c, index, skipvalidate = 0;
 
-	while ((c = getopt(argc, argv, "h:p:d:c:a:nm:")) != -1)
+	while ((c = getopt(argc, argv, "h:p:d:c:a:nm:f:")) != -1)
 		switch (c) {
 		case 'h':
 			hostname = optarg;
@@ -521,6 +605,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'd':
 			directory = optarg;
+			break;
+		case 'f':
+			files = optarg;
 			break;
 		case 'c':
 			crt = optarg;
@@ -532,7 +619,7 @@ int main(int argc, char *argv[]) {
 			skipvalidate = 1;
 			break;
 		case 'm':
-		    maxchildren = atoi(optarg);
+			maxchildren = atoi(optarg);
 			break;
 		case '?':
 			if (optopt == 'c')
@@ -547,9 +634,16 @@ int main(int argc, char *argv[]) {
 		}
 
 #ifdef __DEBUG__
-	printf(
-			"-h(ost) = %s, -p(ort) = %s, -d(irectory) = %s, -c(ertificate-bundle) = %s, -a(uthority) = %s, -n(o CA validation) = %d, -m(ax children) = %d\n",
-			hostname, portnum, directory, crt, authority, skipvalidate, maxchildren);
+	printf("\n-h(ost) = %s, -p(ort) = %s,"
+			"\n-f(ile, multiple paths seperated with a ':') = % s,"
+			"\n-d(irectory, multiple directories seperated with a ':') = %s,"
+			"\n-c(ertificate-bundle) = %s,"
+			"\n-a(uthority) = %s,"
+			"\n-n(o CA validation) = %d,"
+			"\n-m(ax children) = %d\n",
+
+	hostname, portnum, files, directory, crt, authority, skipvalidate,
+			maxchildren);
 #endif
 
 	for (index = optind; index < argc; index++) {
@@ -584,6 +678,7 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	// Spin off the original servers, and then
 	unsigned int i = 0;
 	for (i = 0; i < maxchildren; i++) {
 		make_new_child(ctx, server);
