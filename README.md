@@ -29,6 +29,13 @@ You may alter, the callback, to revert to default functionality, to traverse the
  -m(ax clients to serve at the same time, default 5)
  
  -n(o CA validation, default off)
+ 
+ # Scripts and/or programs exit-codes and execution halting.
+  A note on execution-control of scripts and/or programs. When using the -f flag, the entire list is seen as one. If the first script return exit(>0) then
+ it aborts the execution of the others. This can be used, to signal ownership.
+ 
+ Similarly, when using multiple-directories, almost the same applies. Several directories may be used, however when a file inside a directory, signals ownership
+ the server skips forward to next directory and processes this.  
    
  This software, comes with a client-side X509-implementation, using the above arguments, with a hostname. 
  https://github.com/newsworthy39/X509-inetd-client
