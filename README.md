@@ -30,7 +30,7 @@ You may alter, the callback, to revert to default functionality, to traverse the
  
  -n(o CA validation, default off)
  
- # Scripts and/or programs exit-codes and execution halting.
+# Scripts and/or programs exit-codes and execution halting.
   A note on execution-control of scripts and/or programs. When using the -f flag, the entire list is seen as one. If the first script return exit(>0) then
  it aborts the execution of the others. This can be used, to signal ownership.
  
