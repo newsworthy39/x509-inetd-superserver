@@ -1,0 +1,30 @@
+#!/usr/bin/php
+<?php
+$args = array();
+if (isset($argv[1])) {
+    $args = explode(PHP_EOL, $argv[1]);
+}
+
+function substr_startswith($haystack, $needle) {
+        return substr($haystack, 0, strlen($needle)) === $needle;
+}
+
+# Certificate authenticate (is it authenticated, accessible and allowed to do stuff)
+# is done, further up the chaing.
+
+# Deal with nginx-only.
+foreach($args as $arg) {
+	    // We are responsible for nginx
+	if (substr_startswith(strtolower($arg), 'nginx')) {
+
+        // We don't actually output anything, but merely log the nginx-entry.
+        dealWithPackage($arg);    
+    }
+}
+
+# This function, deals with nginx, in this format
+# nginx: version. When this method is called, then
+# nginx is installed in the client-system.
+function dealWithPackage($argline) {
+	printf( "Client has Nginx, tests completed, verified by authority. Inserting into loadbalancer. OK.\n");
+}

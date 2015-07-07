@@ -92,6 +92,7 @@ int Execute(char **argv) {
 				fprintf(stderr, "Parent: Couldn’t read from pipe.\n");
 				fflush(stdout);
 			}
+			break;
 		case 0: /* Pipe has been closed. */
 //          printf("Parent: End of conversation.\n"); break;
 		default: /* Received a message from the pipe. */
@@ -125,14 +126,11 @@ int fileExists(const char *fname) {
  * @param struct STDINSTDOUT * stdinout The input buffer, as received from the client.
  * @return int if not.
  */
-void ExecuteFile(const char * filename, struct STDINSTDOUT * stdinout) {
+int ExecuteFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
 	char * pcf = strtok(files, ":");
 
 	while (pcf != NULL) {
-
-		char szbuf[512];
-		bzero(szbuf, sizeof(szbuf));
 
 #ifdef __DEBUG__
 		printf("SERVER EXECUTING FILE: %s\n", filename);
@@ -140,7 +138,10 @@ void ExecuteFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
 		if (fileExists(filename)) {
 
-			char *name[] = { filename, &stdinout->buffer_in[0], szbuf,
+			char szbuf[512];
+			bzero(szbuf, sizeof(szbuf));
+
+			const char *name[] = { filename, &stdinout->buffer_in[0], szbuf,
 			NULL };
 
 			int abort = Execute(name);
@@ -152,7 +153,7 @@ void ExecuteFile(const char * filename, struct STDINSTDOUT * stdinout) {
 			}
 
 			if (abort != 0)
-				break;
+				return abort;
 		} else {
 			fprintf(stderr, "Cannot open filename '%s': %s\n", filename,
 					strerror(errno));
@@ -161,6 +162,8 @@ void ExecuteFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
 		pcf = strtok(NULL, ":");
 	}
+
+	return 0;
 
 }
 
@@ -208,26 +211,11 @@ void ExecuteDirectory(const char * dir_name, struct STDINSTDOUT * stdinout) {
 		if (!(entry->d_type & DT_DIR)) {
 			if (strncmp(d_name, ".", 1) != 0) {
 
-				char szbuf[512];
-				bzero(szbuf, sizeof(szbuf));
-
 				char filename[255];
 				bzero(filename, sizeof(filename));
 				sprintf(filename, "%s/%s", dir_name, d_name);
 
-#ifdef __DEBUG__
-				printf("SERVER EXECUTING FILE: %s/%s\n", dir_name, d_name);
-#endif
-				char *name[] = { filename, &stdinout->buffer_in[0], szbuf,
-				NULL };
-
-				int abort = Execute(name);
-
-				if (strlen(szbuf) > 0) {
-					stdinout->offset_out += sprintf(
-							&stdinout->buffer_out[stdinout->offset_out], "%s",
-							szbuf);
-				}
+				int abort = ExecuteFile(filename, stdinout);
 
 				if (abort != 0) {
 					break;
@@ -499,8 +487,8 @@ void make_new_child(SSL_CTX * ctx, int server) {
 						sizeof(tt.buffer_in)); /* get request */
 
 #ifdef __DEBUG__
-				printf("Received message:\n%s, bytes: %d \n", tt.buffer_in,
-						tt.offset_in);
+				printf("X509-inetd-superserver message:\n%s, bytes: %d \n",
+						tt.buffer_in, tt.offset_in);
 #endif
 
 				/*
@@ -518,30 +506,33 @@ void make_new_child(SSL_CTX * ctx, int server) {
 				if (tt.offset_in > 0) {
 
 					/**
-					 * A) Run through directories.
-					 * B) Blocking, thus we use prefork.
-					 * C) Multiple-directories.
-					 * D) The flag can be omitted, then we skip it entirely.
-					 */
-#ifdef __DEBUG__
-					printf("Splitting string \"%s\" into tokens:\n", directory);
-#endif
-					if (strlen(directory) > 0) {
-						char * pch = strtok(directory, ":");
-						while (pch != NULL) {
-							ExecuteDirectory(pch, &tt);
-							pch = strtok(NULL, ":");
-						}
-					}
-
-					/**
 					 * A) Run file. The same principles apply, abort if child exits(>0)
 					 * B) Blocking, thus we use prefork.
 					 * C) Multiple-files
 					 * D) The flag can be omitted, then we skip them entirely.
 					 */
+					int abort = 0;
 					if (strlen(files) > 0) {
-						ExecuteFile(files, &tt);
+						abort = ExecuteFile(files, &tt);
+					}
+
+					/**
+					 * A) Run through directories.
+					 * B) Blocking, thus we use prefork.
+					 * C) Multiple-directories.
+					 * D) The flag can be omitted, then we skip it entirely.
+					 */
+					if (strlen(directory) > 0 && abort == 0) {
+
+#ifdef __DEBUG__
+						printf("Splitting string \"%s\" into tokens:\n",
+								directory);
+#endif
+						char * pch = strtok(directory, ":");
+						while (pch != NULL) {
+							ExecuteDirectory(pch, &tt);
+							pch = strtok(NULL, ":");
+						}
 					}
 
 					/** The reason, we send a single byte, if

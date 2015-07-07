@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# this will stop processing.
+exit 1
+
+# but this wont
+exit 1
