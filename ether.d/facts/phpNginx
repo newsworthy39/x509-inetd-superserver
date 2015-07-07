@@ -1,4 +1,6 @@
 #!/usr/bin/php
+# An example of a PHP-style inspection hook, to look and manage nginx installations, by inspecting the 'nginx'-fact, from the
+# clients.
 <?php
 $args = array();
 if (isset($argv[1])) {

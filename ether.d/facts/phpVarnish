@@ -1,4 +1,6 @@
 #!/usr/bin/php
+# An example of a PHP-style inspection hook, to look and manage nginx installations, by inspecting the 'nginx'-fact, from the
+# clients.
 <?php
 $args = array();
 if (isset($argv[1])) {
@@ -12,7 +14,7 @@ function substr_startswith($haystack, $needle) {
 # Certificate authenticate (is it authenticated, accessible and allowed to do stuff)
 # is done, further up the chaing.
 
-# Deal with nginx-only.
+# Deal with varnish-only.
 foreach($args as $arg) {
     // We are responsible for nginx
     if (substr_startswith(strtolower($arg), 'varnish')) {
@@ -22,10 +24,9 @@ foreach($args as $arg) {
     }
 }
 
-# This function, deals with nginx, in this format
+# This function, deals with varnish, in this format
 # nginx: version. When this method is called, then
 # nginx is installed in the client-system.
 function dealWithPackage($argline) {
-	sleep (10);
-	printf( "I AM DEALING WITH Varnish\n");
+	printf( "Client has varnish, tests completed, verified by authority. Inserting into loadbalancer. OK.\n");
 }
