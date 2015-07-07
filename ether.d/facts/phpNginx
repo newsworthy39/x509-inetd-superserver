@@ -1,7 +1,9 @@
 #!/usr/bin/php
-# An example of a PHP-style inspection hook, to look and manage nginx installations, by inspecting the 'nginx'-fact, from the
-# clients.
 <?php
+/*
+ * An example of a PHP-style inspection hook, to look and manage nginx installations, by inspecting the 'nginx'-fact, from the
+ * clients.
+ */
 $args = array();
 if (isset($argv[1])) {
     $args = explode(PHP_EOL, $argv[1]);
