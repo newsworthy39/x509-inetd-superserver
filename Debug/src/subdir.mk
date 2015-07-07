@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/etherwatchdog.c 
+../src/x509-inetd-server.c 
 
 OBJS += \
-./src/etherwatchdog.o 
+./src/x509-inetd-server.o 
 
 C_DEPS += \
-./src/etherwatchdog.d 
+./src/x509-inetd-server.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
