@@ -1,5 +1,7 @@
-// SSL-Client.c
+// x509-inetd-server.c
 // As described on http://simplestcodings.blogspot.dk/2010/08/secure-server-client-using-openssl-in-c.html
+// the server is meant to update a shared resource (ie, db, or other storage mechanism) to reflect the changes
+// of its clients, and have support-mechanisms, react to this event.
 #include <errno.h>
 #include <unistd.h>
 #include <malloc.h>
