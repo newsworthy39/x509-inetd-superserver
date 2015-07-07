@@ -49,3 +49,9 @@ You may alter, the callback, to revert to default functionality, to traverse the
  
  # Certificate authority
  .. 
+ 
+ # Launch example
+ 
+ x509-inetd-server -c ${project_loc}/certs/mycert.pem -a /etc/ssl/certs -f ${project_loc}/ether.d/authorization -d ${project_loc}/ether.d/facts -m 8
+ 
+ 

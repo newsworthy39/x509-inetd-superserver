@@ -282,7 +282,7 @@ int OpenListener(int port) {
 		perror("can't bind port");
 		return -1;
 	}
-	if (listen(sd, 10) != 0) {
+	if (listen(sd, 768) != 0) {
 		perror("Can't configure listening port");
 		return -1;
 	}
@@ -623,7 +623,7 @@ int main(int argc, char *argv[]) {
 			abort();
 		}
 
-#ifdef __DEBUG__
+
 	printf("\n-h(ost) = %s, -p(ort) = %s,"
 			"\n-f(ile, multiple paths seperated with a ':') = % s,"
 			"\n-d(irectory, multiple directories seperated with a ':') = %s,"
@@ -631,7 +631,7 @@ int main(int argc, char *argv[]) {
 			"\n-a(uthority) = %s,"
 			"\n-m(ax children) = %d\n",
 			hostname, portnum, files, directory, crt, authority, maxchildren);
-#endif
+
 
 	for (index = optind; index < argc; index++) {
 		printf("Non-option argument %s\n", argv[index]);
@@ -649,14 +649,16 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, NULL);
-	SSL_CTX_set_options(ctx, SSL_OP_NO_TLSv1|SSL_OP_NO_SSLv3|SSL_OP_NO_SSLv2);
-	if (1 != SSL_CTX_load_verify_locations(ctx, authority, NULL)) {
+	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+	SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
+	if (1 != SSL_CTX_load_verify_locations(ctx, NULL, authority)) {
 		printf("error: Could not load authority from file %s\n", authority);
 	}
 
 #ifdef __DEBUG__
-	SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
+	//SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
+#else
+	//SSL_CTX_set_cert_verify_callback(ctx, NULL, NULL);
 #endif
 
 	; /* create server socket */
