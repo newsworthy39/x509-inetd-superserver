@@ -584,9 +584,9 @@ int main(int argc, char *argv[]) {
 
 	set_up_signals();
 
-	int server, c, index, skipvalidate = 0;
+	int server, c, index;
 
-	while ((c = getopt(argc, argv, "h:p:d:c:a:nm:f:")) != -1)
+	while ((c = getopt(argc, argv, "h:p:d:c:a:m:f:")) != -1)
 		switch (c) {
 		case 'h':
 			hostname = optarg;
@@ -605,9 +605,6 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'a':
 			authority = optarg;
-			break;
-		case 'n':
-			skipvalidate = 1;
 			break;
 		case 'm':
 			maxchildren = atoi(optarg);
@@ -630,11 +627,8 @@ int main(int argc, char *argv[]) {
 			"\n-d(irectory, multiple directories seperated with a ':') = %s,"
 			"\n-c(ertificate-bundle) = %s,"
 			"\n-a(uthority) = %s,"
-			"\n-n(o CA validation) = %d,"
 			"\n-m(ax children) = %d\n",
-
-	hostname, portnum, files, directory, crt, authority, skipvalidate,
-			maxchildren);
+			hostname, portnum, files, directory, crt, authority, maxchildren);
 #endif
 
 	for (index = optind; index < argc; index++) {
@@ -659,9 +653,9 @@ int main(int argc, char *argv[]) {
 		printf("error: Could not load authority from file %s\n", authority);
 	}
 
-	// Should we skip CA-validation?
-	if (skipvalidate == 1)
-		SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
+#ifdef __DEBUG__
+	SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
+#endif
 
 	; /* create server socket */
 	if (-1 == (server = OpenListener(atoi(portnum)))) {
