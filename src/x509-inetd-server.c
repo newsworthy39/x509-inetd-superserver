@@ -27,7 +27,7 @@ struct STDINSTDOUT {
 };
 
 char *hostname = "localhost", *portnum = "5001", *directory = "", *files = "",
-		*crt = "mycrt.pem", *authority = "myca.pem";
+		*crt = "mycrt.pem", *authority = NULL;
 
 unsigned int children = 0, maxchildren = 5;
 
@@ -650,16 +650,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-	SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
-	if (1 != SSL_CTX_load_verify_locations(ctx, NULL, authority)) {
+	SSL_CTX_set_options(ctx, SSL_OP_NO_TLSv1 | SSL_OP_NO_SSLv3 | SSL_OP_NO_SSLv2);
+	if (1 != SSL_CTX_load_verify_locations(ctx, authority, "/etc/ssl/certs")) {
 		printf("error: Could not load authority from file %s\n", authority);
 	}
-
-#ifdef __DEBUG__
-	//SSL_CTX_set_cert_verify_callback(ctx, always_true_callback, NULL);
-#else
-	//SSL_CTX_set_cert_verify_callback(ctx, NULL, NULL);
-#endif
 
 	; /* create server socket */
 	if (-1 == (server = OpenListener(atoi(portnum)))) {
