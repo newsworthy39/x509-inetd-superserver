@@ -140,7 +140,7 @@ int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
         if (fileExists(filename)) {
 
-            char szbuf[512];
+            char szbuf[4096];
             bzero(szbuf, sizeof(szbuf));
 
             const char *name[] = { filename, &stdinout->buffer_in[0], szbuf,
