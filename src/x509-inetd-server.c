@@ -69,7 +69,7 @@ int execute(char **argv) {
     } else { /* for the parent:      */
         while (waitpid(-1, &status, 0) != pid) {
 #ifdef __DEBUG__
-            printf(" I AM  WAITING");
+            printf("The child-process is waiting.\n");
 #endif
         }
 
@@ -149,9 +149,16 @@ int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
             int abort = execute(name);
 
             if (strlen(szbuf) > 0) {
+
                 stdinout->offset_out += sprintf(
                         &stdinout->buffer_out[stdinout->offset_out], "%s",
                         szbuf);
+
+                // lets copy it into the input-buffer, allowing us to 'share' it
+                // with the others.
+                stdinout->offset_in += sprintf(
+                                        &stdinout->buffer_in[stdinout->offset_in], "%s",
+                                        szbuf);
             }
 
             if (abort != 0)
