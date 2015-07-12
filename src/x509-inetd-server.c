@@ -78,7 +78,7 @@ int execute(char **argv) {
 #endif
 
         // parent
-        char buffer[512];
+        char buffer[4096];
         bzero(buffer, sizeof(buffer));
 
         close(pipefd[1]);  // close the write end of the pipe in the parent
