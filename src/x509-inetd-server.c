@@ -19,6 +19,11 @@
 
 #define FAIL    -1
 
+// Used, when controlling output from children to do IPC.
+#define FORKOK 0
+#define FORKOKSHARE 2
+#define FORKEXITABORT 1
+
 struct STDINSTDOUT {
     char buffer_in[4096];
     unsigned int offset_in;
@@ -29,6 +34,7 @@ struct STDINSTDOUT {
 char *hostname = "localhost", *portnum = "5001", *directory = "", *files = "",
         *crt = "mycrt.pem", *authority = NULL;
 
+// default is to use nobody when forking.
 unsigned int children = 0, maxchildren = 5, uid = 65534, gid = 65534;
 
 /**
@@ -130,43 +136,61 @@ int fileExists(const char *fname) {
  */
 int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
-    char * pcf = strtok(files, ":");
+    char * pcf = strtok(filename, ":");
 
     while (pcf != NULL) {
 
 #ifdef __DEBUG__
-        printf("SERVER EXECUTING FILE: %s\n", filename);
+        printf("SERVER EXECUTING FILE: %s\n", pcf);
 #endif
 
-        if (fileExists(filename)) {
+        char szbuf[4096];
+        bzero(szbuf, sizeof(szbuf));
 
-            char szbuf[4096];
-            bzero(szbuf, sizeof(szbuf));
+        const char *name[] = { pcf, &stdinout->buffer_in[0], szbuf,
+        NULL };
 
-            const char *name[] = { filename, &stdinout->buffer_in[0], szbuf,
-            NULL };
+        int exit_signal = execute(name);
+        switch (exit_signal) {
 
-            int abort = execute(name);
+        // all is well, but output are to be put in inputbuffer.
+        case FORKOKSHARE: {
 
             if (strlen(szbuf) > 0) {
+                // lets copy it into the input-buffer, allowing us to 'share' it
+                // with the others.
+                stdinout->offset_in += sprintf(
+                        &stdinout->buffer_in[stdinout->offset_in], "%s", szbuf);
+            }
 
+        }
+            break;
+
+            // All is not well. Abort execution, output into outputbuffer and send to client
+        case FORKEXITABORT: {
+            if (strlen(szbuf) > 0) {
+                stdinout->offset_out += sprintf(
+                        &stdinout->buffer_out[stdinout->offset_out], "%s",
+                        szbuf);
+            }
+
+            return FORKEXITABORT;
+
+        }
+            break;
+
+            // All is well, copy output to outputbuffer.
+        default: {
+            if (strlen(szbuf) > 0) {
                 stdinout->offset_out += sprintf(
                         &stdinout->buffer_out[stdinout->offset_out], "%s",
                         szbuf);
 
-                // lets copy it into the input-buffer, allowing us to 'share' it
-                // with the others.
-                stdinout->offset_in += sprintf(
-                                        &stdinout->buffer_in[stdinout->offset_in], "%s",
-                                        szbuf);
             }
 
-            if (abort != 0)
-                return abort;
-        } else {
-            fprintf(stderr, "Cannot open filename '%s': %s\n", filename,
-                    strerror(errno));
+        }
 
+            break;
         }
 
         pcf = strtok(NULL, ":");
@@ -226,9 +250,10 @@ void executeDirectory(const char * dir_name, struct STDINSTDOUT * stdinout) {
 
                 int abort = executeFile(filename, stdinout);
 
-                if (abort != 0) {
+                if (abort == FORKEXITABORT) {
                     break;
                 }
+
             }
         }
     }
@@ -629,12 +654,13 @@ int main(int argc, char *argv[]) {
         case 'u':
             uid = atoi(optarg);
             break;
+        case 'g':
+            gid = atoi(optarg);
+            break;
 
         case '?':
             if (optopt == 'c')
                 fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-            else if (isprint(optopt))
-                fprintf(stderr, "Unknown option `-%c'.\n", optopt);
             else
                 fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
             return 1;
@@ -646,7 +672,7 @@ int main(int argc, char *argv[]) {
                             "\n-c(ertificate-bundle) = %s,"
                             "\n-a(uthority) = %s,"
                             "\n-m(ax children) = %d\n"
-                            "\n-u(ser id) = %d\n" "\n-m(ax children) = %d\n"
+                            "\n-u(ser id) = %d\n"
                             "\n-g(group ud) = %d\n", hostname, portnum, files,
                     directory, crt, authority, maxchildren, uid, gid);
             abort();
