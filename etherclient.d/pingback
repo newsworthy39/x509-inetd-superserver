@@ -2,5 +2,4 @@
 # Whenever the x509-inetd-server is receiving a stream, that involves the header
 # Pingback: 1, 
 # then we connect back to the $CN_FROM_ARGV in the serial, presented from the "client", following the one below
-
-x509-inetd-client -h $CN_FROM_ARGV1 -d ~/x509-inetd-client/etherclient.d -c ~/x509-inetd-client/certs/mycert.pem
+/home/gandalf/git/x509-inetd-client/Release/x509-inetd-client -h nodeb.local -p 5001 -n -c /home/gandalf/git/x509-inetd-client/certs/mycert.pem &> /dev/null
