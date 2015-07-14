@@ -41,7 +41,7 @@ unsigned int children = 0, maxchildren = 5, uid = 65534, gid = 65534;
  * Execute a file, using fork and dup2(pipe)
  * @Param char *name[] = { prog, szbuf, NULL };
  */
-int execute(char **argv) {
+int execute(const char **argv) {
     pid_t pid;
     int status;
     int pipefd[2];
@@ -136,7 +136,7 @@ int fileExists(const char *fname) {
  */
 int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
-    char * pcf = strtok(filename, ":");
+    const char * pcf = strtok(filename, ":");
 
     while (pcf != NULL) {
 
@@ -151,6 +151,8 @@ int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
         NULL };
 
         int exit_signal = execute(name);
+
+
         switch (exit_signal) {
 
         // all is well, but output are to be put in inputbuffer.
@@ -667,7 +669,7 @@ int main(int argc, char *argv[]) {
         default:
             printf(
                     "\n-h(ost) = %s, -p(ort) = %s,"
-                            "\n-f(ile, multiple paths seperated with a ':') = % s,"
+                            "\n-f(ile, multiple paths seperated with a ':') = %s,"
                             "\n-d(irectory, multiple directories seperated with a ':') = %s,"
                             "\n-c(ertificate-bundle) = %s,"
                             "\n-a(uthority) = %s,"
