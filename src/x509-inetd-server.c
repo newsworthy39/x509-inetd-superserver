@@ -31,8 +31,9 @@ struct STDINSTDOUT {
 	unsigned int offset_out;
 };
 
-char *hostname = "localhost", *portnum = "5001", *directory = "", *files = "",
-		*crt = "mycrt.pem", *authority = NULL;
+char hostname[256] = { "localhost" }, portnum[8] = { "5001" }, directory[256] =
+		{ 0 }, files[256] = { 0 }, crt[256] = { "mycrt.pem" }, authority[256] =
+		{ 0 };
 
 // default is to use nobody when forking.
 unsigned int children = 0, maxchildren = 5, uid = 65534, gid = 65534;
@@ -260,29 +261,6 @@ void executeDirectory(const char * dir_name, struct STDINSTDOUT * stdinout) {
 		}
 	}
 
-//#endif /* 0 */
-
-//		if (entry->d_type & DT_DIR) {
-//
-//			/* Check that the directory is not "d" or d's parent. */
-//
-//			if (strcmp(d_name, "..") != 0 && strcmp(d_name, ".") != 0) {
-//				int path_length;
-//				char path[PATH_MAX];
-//
-//				path_length = snprintf(path, PATH_MAX, "%s/%s", dir_name,
-//						d_name);
-//				printf("%s\n", path);
-//				if (path_length >= PATH_MAX) {
-//					fprintf(stderr, "Path length has got too long.\n");
-//					exit(EXIT_FAILURE);
-//				}
-//
-//				/* Recursively call "list_dir" with the new path. */
-//				ExecuteDirectory(path, buffer_in, buffer_out, offset);
-//			}
-//		}
-
 	/* After going through all the entries, close the directory. */
 	if (closedir(d)) {
 		fprintf(stderr, "Could not close '%s': %s\n", dir_name,
@@ -290,6 +268,97 @@ void executeDirectory(const char * dir_name, struct STDINSTDOUT * stdinout) {
 		exit(EXIT_FAILURE);
 
 	}
+}
+
+/**
+ * ExecuteDirectory.
+ * Executes the content of a directory (not-recursive). When it encountes an exec, that returns exit(1), then
+ * it halts processing, because it signals the claim of responsibility. This can be used, to implement chain-of-responsibilites.
+ * @param dir_name The directory, into which, recursively to look for files, to execute (files, containing with +x).
+ * @param struct STDINSTDOUT * stdinout The input/output struct,
+ * @return none.
+ */
+int executeDirectoryRecursive(const char * dir_name,
+		struct STDINSTDOUT * stdinout) {
+
+	DIR * d;
+
+	/* Open the directory specified by "dir_name". */
+
+	d = opendir(dir_name);
+
+	/* Check it was opened. */
+	if (!d) {
+		fprintf(stderr, "Cannot open directory '%s': %s\n", dir_name,
+				strerror(errno));
+		return -1;
+	}
+
+	while (1) {
+		struct dirent * entry;
+		const char * d_name;
+
+		/* "Readdir" gets subsequent entries from "d". */
+		entry = readdir(d);
+		if (!entry) {
+			/* There are no more entries in this directory, so break
+			 out of the while loop. */
+			break;
+		}
+		d_name = entry->d_name;
+
+		/* If you don't want to print the directories, use the
+		 following line:, and also - skip the files with a . */
+		if (!(entry->d_type & DT_DIR)) {
+			if (strncmp(d_name, ".", 1) != 0) {
+
+				char filename[255];
+				bzero(filename, sizeof(filename));
+				sprintf(filename, "%s/%s", dir_name, d_name);
+
+				int abort = executeFile(filename, stdinout);
+
+				if (abort == FORKEXITABORT) {
+#ifdef __DEBUG__
+					printf("Child exited with abort-code.\n");
+#endif
+					return abort;
+				}
+
+			}
+		}
+
+		if (entry->d_type & DT_DIR) {
+
+			/* Check that the directory is not "d" or d's parent. */
+
+			if (strcmp(d_name, "..") != 0 && strcmp(d_name, ".") != 0) {
+				int path_length;
+				char path[PATH_MAX];
+
+				path_length = snprintf(path, PATH_MAX, "%s/%s", dir_name,
+						d_name);
+				printf("%s\n", path);
+				if (path_length >= PATH_MAX) {
+					fprintf(stderr, "Path length has got too long.\n");
+					exit(EXIT_FAILURE);
+				}
+
+				/* Recursively call "list_dir" with the new path. */
+				executeDirectoryRecursive(path, stdinout);
+			}
+		}
+
+		/* After going through all the entries, close the directory. */
+//		if (closedir(d)) {
+//			fprintf(stderr, "Could not close '%s': %s\n", dir_name,
+//					strerror(errno));
+//			exit(EXIT_FAILURE);
+//
+//		}
+	}
+
+	return FORKOK;
 }
 
 /**
@@ -632,22 +701,22 @@ int main(int argc, char *argv[]) {
 	while ((c = getopt(argc, argv, "h:p:d:c:a:m:f:g:u:")) != -1)
 		switch (c) {
 		case 'h':
-			hostname = optarg;
+			strcpy(hostname, optarg);
 			break;
 		case 'p':
-			portnum = optarg;
+			strcpy(portnum, optarg);
 			break;
 		case 'd':
-			directory = optarg;
+			strcpy(directory, optarg);
 			break;
 		case 'f':
-			files = optarg;
+			strcpy(files, optarg);
 			break;
 		case 'c':
-			crt = optarg;
+			strcpy(crt, optarg);
 			break;
 		case 'a':
-			authority = optarg;
+			strcpy(authority, optarg);
 			break;
 		case 'm':
 			maxchildren = atoi(optarg);
@@ -664,7 +733,7 @@ int main(int argc, char *argv[]) {
 				fprintf(stderr, "Option -%c requires an argument.\n", optopt);
 			else
 				fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
-			return 1;
+			exit(EXIT_FAILURE);
 		default:
 			printf(
 					"\n-h(ost) = %s, -p(ort) = %s,"
@@ -698,9 +767,7 @@ int main(int argc, char *argv[]) {
 	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
 
 	SSL_CTX_set_options(ctx,
-			SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 |  SSL_OP_NO_TLSv1_1);
-
-
+			SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 
 	if (1 != SSL_CTX_load_verify_locations(ctx, authority, "/etc/ssl/certs")) {
 		printf("error: Could not load authority from file %s\n", authority);
