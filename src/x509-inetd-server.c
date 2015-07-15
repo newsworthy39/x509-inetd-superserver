@@ -127,8 +127,8 @@ int fileExists(const char *fname) {
 }
 
 /**
- * ExecuteDirectory.
- * Executes the content of a directory (not-recursive). When it encountes an exec, that returns exit(1), then
+ * executeFile.
+ * Executes a file
  * it halts processing, because it signals the claim of responsibility. This can be used, to implement chain-of-responsibilites.
  * @param fqdn The file, to run ( files should be marked with +x).
  * @param struct STDINSTDOUT * stdinout The input buffer, as received from the client.
@@ -136,22 +136,21 @@ int fileExists(const char *fname) {
  */
 int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
 
-	const char * pcf = strtok(filename, ":");
+	char * token, *rest = filename;
 
-	while (pcf != NULL) {
+	while ((token = strtok_r(rest, ":,", &rest))) {
 
 #ifdef __DEBUG__
-		printf("SERVER EXECUTING FILE: %s\n", pcf);
+		printf("SERVER EXECUTING FILE: %s\n", token);
 #endif
 
 		char szbuf[4096];
 		bzero(szbuf, sizeof(szbuf));
 
-		const char *name[] = { pcf, &stdinout->buffer_in[0], szbuf,
+		const char *name[] = { token, &stdinout->buffer_in[0], szbuf,
 		NULL };
 
 		int exit_signal = execute(name);
-
 		switch (exit_signal) {
 
 		// all is well, but output are to be put in inputbuffer.
@@ -194,7 +193,9 @@ int executeFile(const char * filename, struct STDINSTDOUT * stdinout) {
 			break;
 		}
 
-		pcf = strtok(NULL, ":");
+		if (token == NULL) {
+			return FORKOK;
+		}
 	}
 
 	return 0;
@@ -490,10 +491,10 @@ void forkChild(SSL_CTX * ctx, int server) {
 
 		unsigned int requestsServed = 0;
 
-		//int status = setuid(uid);
+		int status = setuid(uid);
 #ifdef __DEBUG__
-		//printf("Result of fork/exec setuid is %d, %s\n", status,
-				//strerror(errno));
+		printf("Result of fork/exec setuid is %d, %s\n", status,
+				strerror(errno));
 #endif
 
 		// we're child. We own the server.
