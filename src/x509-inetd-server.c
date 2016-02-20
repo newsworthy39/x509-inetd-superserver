@@ -31,7 +31,7 @@ struct STDINSTDOUT {
 	unsigned int offset_out;
 };
 
-char hostname[256] = { "localhost" }, portnum[8] = { "5001" }, directory[256] =
+char hostname[256] = { "localhost" }, portnum[8] = { "5001" }, directory[2048] =
 		{ 0 }, files[256] = { 0 }, crt[256] = { "mycrt.pem" }, authority[256] =
 		{ 0 };
 
@@ -588,8 +588,14 @@ void forkChild(SSL_CTX * ctx, int server) {
 
 			else {
 
-				tt.offset_in += SSL_read(ssl, &tt.buffer_in[tt.offset_in],
-						sizeof(tt.buffer_in)); /* get request */
+			    // FIX: Create proper read-while-allocate-loop
+			    char buffer[4096] = { 0 };
+                SSL_read(ssl, &buffer, sizeof(buffer)); /* get request */
+                if (strlen(buffer) > 1) {
+                    tt.offset_in += sprintf(
+                            &tt.buffer_in[tt.offset_in], "Input:%s\n",
+                                    buffer);
+                }
 
 #ifdef __DEBUG__
 				printf("X509-inetd-superserver message:\n%s, bytes: %d \n",
@@ -629,11 +635,14 @@ void forkChild(SSL_CTX * ctx, int server) {
 					 */
 					if (strlen(directory) > 0 && abort == 0) {
 
+				        char dd[2048];
+				        strncpy(dd, directory, strlen(directory));
+
 #ifdef __DEBUG__
-						printf("Splitting string \"%s\" into tokens:\n",
-								directory);
+                        printf("Splitting string \"%s\" into tokens:\n",
+                                dd);
 #endif
-						char * pch = strtok(directory, ":");
+						char * pch = strtok(dd, ":");
 						while (pch != NULL) {
 							executeDirectory(pch, &tt);
 							pch = strtok(NULL, ":");

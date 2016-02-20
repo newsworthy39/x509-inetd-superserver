@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -x
 CMD=x509-inetd-superserver
 RELEASE="Debug"
@@ -11,6 +11,12 @@ AUTHORITY="$DIR/certificates/authority.crt"
 AUTHORIZE=$DIR/ether.d/authorization
 PLUGINDIRECTORY=$DIR/facts
 
-PLUGINS=virtualbox
+PLUGINS=()
 
-$CMD -a $AUTHORITY -c $CERTIFICATE -f $AUTHORIZE -d $PLUGINDIRECTORY/$PLUGINS -g $GID -u $UID
+for i in $PLUGINDIRECTORY/*; do
+     PLUGINS+=( "$PLUGINDIRECTORY/$(basename $i)" )
+done
+
+lst=$(IFS=":"; echo "${PLUGINS[*]}")
+
+$CMD -a $AUTHORITY -c $CERTIFICATE -f $AUTHORIZE -d $lst -g $GID -u $UID
