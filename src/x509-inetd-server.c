@@ -505,15 +505,6 @@ void showCerts(SSL* ssl, struct STDINSTDOUT * stdinstdout) {
 }
 
 /**
- * int allways_true_callback.
- * A method, to avoid CA validation of the supplied certificate.
- * This is higly discouraged in production. Use a intermediate CA.
- */
-static int alwaysTrueCallback(X509_STORE_CTX *ctx, void *arg) {
-	return 1;
-}
-
-/**
  * Reap children, and fill up the pool, by decrementing the children.
  * The main while(1) .. sleep .. for, will fill up the missing.
  */
@@ -560,10 +551,12 @@ void forkChild(SSL_CTX * ctx, int server) {
 
 		unsigned int requestsServed = 0;
 
-		int status = setuid(uid);
 #ifdef __DEBUG__
+		int status = setuid(uid);
 		printf("Result of fork/exec setuid is %d, %s\n", status,
 				strerror(errno));
+#else
+		setuid(uid);
 #endif
 
 		// we're child. We own the server.

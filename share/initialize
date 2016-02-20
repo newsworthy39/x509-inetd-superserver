@@ -1,0 +1,16 @@
+#!/bin/sh
+set -x
+CMD=x509-inetd-superserver
+RELEASE="Debug"
+DIR=$HOME/workspace/x509-inetd-superserver
+CMD=$DIR/$RELEASE/$CMD
+UID=1000
+GID=100
+CERTIFICATE="$DIR/certificates/$(hostname --fqdn).pem"
+AUTHORITY="$DIR/certificates/authority"
+AUTHORIZE=$DIR/ether.d/authorization
+PLUGINDIRECTORY=$DIR/etherclient.d
+
+PLUGINS=virtualbox
+
+$CMD -a $AUTHORITY -c $CERTIFICATE -f $AUTHORIZE -d $PLUGINDIRECTORY/$PLUGINS -g $GID -u $UID
