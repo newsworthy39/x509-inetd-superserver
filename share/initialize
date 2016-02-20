@@ -7,7 +7,7 @@ CMD=$DIR/$RELEASE/$CMD
 UID=1000
 GID=100
 CERTIFICATE="$DIR/certificates/$(hostname --fqdn).pem"
-AUTHORITY="$DIR/certificates/authority"
+AUTHORITY="$DIR/certificates/authority.crt"
 AUTHORIZE=$DIR/ether.d/authorization
 PLUGINDIRECTORY=$DIR/etherclient.d
 
