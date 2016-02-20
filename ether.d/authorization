@@ -4,7 +4,13 @@
 # This is an example of a simple authorization-script.
 # exit 0, allows for further processing
 # exit 1, hals the chain.
+
+while read line
+        do
+        echo "$line"
+done < "${1:-/dev/stdin}"
+
 exit 0
 
 # You may use any means of program, as long as it applies to either
-a) elf-style Main, or by using the she-bang at the top.
+# a) elf-style Main, or by using the she-bang at the top.
