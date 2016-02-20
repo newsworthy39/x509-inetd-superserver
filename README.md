@@ -57,5 +57,20 @@ You may alter, the callback, to revert to default functionality, to traverse the
 # Launch example
  
  x509-inetd-server -c ${project_loc}/certs/mycert.pem -f ${project_loc}/ether.d/authorization -d ${project_loc}/ether.d/facts -m 8
+
+# stdin and stdout
+All communication to scripts that is forked via suexec, is done via stdin and stdout. Use stderr to create a logfile
+via bash-redirection. 
+
+# subject-line from x509-inetd-client (or similar)
+Since all communications is done via stdin, the following snippet will read the issuer/subject-line delivered as a part
+of the TLS-handshake to bash
+
+Issuer, Certificates and Subject-line from the x509-inetd-client is available via stdin.
  
- 
+ #!/bin/bash
+ while read line
+    do
+          echo "$line"
+ done < "${1:-/dev/stdin}"
+
