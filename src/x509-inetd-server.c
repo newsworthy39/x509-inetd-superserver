@@ -660,7 +660,7 @@ void forkChild(SSL_CTX * ctx, int server) {
 #ifdef __DEBUG__
 					if (tt.offset_out > 0)
 						printf(
-								"Output length: %zu, bytes sent: %d, value: %s\n",
+								"Output length: %zu, bytes sent: %d, value: \n%s\n",
 								strlen(tt.buffer_out), bytes, tt.buffer_out);
 					else
 						printf("Output length: %zu, bytes sent: %d\n",
