@@ -1,2 +1,5 @@
 #!/bin/bash
-vboxmanage list vms
+VMS=($(vboxmanage list vms | cut -d ' ' -f 1))
+lst=$(IFS=","; echo "${VMS[*]}")
+echo "$(basename $0):$lst"
+
