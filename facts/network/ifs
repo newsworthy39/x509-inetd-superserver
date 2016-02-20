@@ -1,0 +1,13 @@
+#!/bin/bash
+
+RESULT=()
+
+for i in /sys/class/net/*; do
+         RESULT+=( "$(basename $i)" )
+done
+
+lst=$(IFS=","; echo "${RESULT[*]}")
+
+echo "$(basename $0):$lst"
+
+exit 0
