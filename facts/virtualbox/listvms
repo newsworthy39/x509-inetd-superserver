@@ -1,5 +1,6 @@
 #!/bin/bash
-VMS=($(vboxmanage list vms | cut -d ' ' -f 1))
-lst=$(IFS=","; echo "${VMS[*]}")
-echo "$(basename $0):$lst"
-
+if [ $(which vboxmanager; echo $? ) -ne 1 ]; then
+	VMS=($(vboxmanage list vms | cut -d ' ' -f 1))
+	lst=$(IFS=","; echo "${VMS[*]}")
+	echo "$(basename $0):$lst"
+fi
