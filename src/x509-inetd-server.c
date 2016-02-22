@@ -767,7 +767,7 @@ int main(int argc, char *argv[]) {
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
 
     SSL_CTX_set_options(ctx,
-            SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TICKET); // op no ticket is a bug-workaround.
+            SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TICKET); // op no ticket is a bug-workaround.
 
     long test = SSL_CTX_get_session_cache_mode(ctx);
 
