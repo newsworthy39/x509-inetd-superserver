@@ -1,6 +1,7 @@
 # x509-inetd-superserver (openssl)
 
-The x509 inetd-like superserver. The inetd-superserver, takes simple init-style sysv-scripts, and executes them, outputting any result via echo, printf back to the client. Since its a TLS-1.2 (tls1.1-compatible) TCP server, listening on a specific-port, you may use whatever protocol as you see fint.
+The x509 inetd-like superserver. The inetd-superserver, takes simple init-style sysv-scripts, and executes them, outputting any result via echo, printf back to the client. Since its a TLS-1.2 (tls1.1-compatible) TCP server, listening on a specific-port, its configuration free. Simply plop in the proper certificates, and use the plugin-architecture, to 
+run java/bash/python/what-have-you plugins to output to stdout / stderr. 
 
 # CA-authority.
 Currently, the ssl_ctx_cert_verify_callback  (https://www.openssl.org/docs/ssl/SSL_CTX_set_cert_verify_callback.html) returns true, to allow the passing of
