@@ -588,7 +588,7 @@ void forkChild(SSL_CTX * ctx, int server) {
 
             else {
 
-                // FIX: Create proper read-while-allocate-loop
+                // TODO: Create proper read-while-allocate-loop
                 char buffer[4096] = { 0 };
                 SSL_read(ssl, &buffer, sizeof(buffer)); /* get request */
                 if (strlen(buffer) > 1) {
